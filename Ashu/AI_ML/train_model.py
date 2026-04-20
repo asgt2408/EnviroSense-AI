@@ -19,6 +19,13 @@ query = "SELECT * FROM ashu_features ORDER BY time"
 
 df = pd.read_sql(query, engine)
 
+df['pm1_lag1'] = df['pm1_avg'].shift(1)
+df['pm25_lag1'] = df['pm25_avg'].shift(1)
+df['pm10_lag1'] = df['pm10_avg'].shift(1)
+
+# remove first row (will have NaN due to shift)
+df = df.dropna()
+
 
 base_X = df.drop(columns=[
     'id',
@@ -116,10 +123,24 @@ algo_pm10, mae_pm10, rmse_pm10 = select_best(lr_mae_pm10, lr_rmse_pm10, rf_mae_p
 model_dir = "Ashu/AI_ML"
 os.makedirs(model_dir, exist_ok=True)
 
-joblib.dump(lr_pm1, f"{model_dir}/pm1_model.pkl")
-joblib.dump(lr_pm25, f"{model_dir}/pm25_model.pkl")
-joblib.dump(lr_pm10, f"{model_dir}/pm10_model.pkl")
+# save models
+joblib.dump(
+    rf_pm1 if algo_pm1 == "RandomForest" else lr_pm1,
+    f"{model_dir}/pm1_model.pkl"
+)
 
+joblib.dump(
+    rf_pm25 if algo_pm25 == "RandomForest" else lr_pm25,
+    f"{model_dir}/pm25_model.pkl"
+)
+
+joblib.dump(
+    rf_pm10 if algo_pm10 == "RandomForest" else lr_pm10,
+    f"{model_dir}/pm10_model.pkl"
+)
+
+# 🔥 ADD THIS (only once, not 3 times)
+joblib.dump(list(X_pm25.columns), f"{model_dir}/feature_columns.pkl")
 
 
 ## Storing in the Database
